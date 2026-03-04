@@ -1,4 +1,4 @@
-## Experience Continuity Layer (ECL)
+## ECL Experience Continuity Layer POC
 
 Experience Continuity Layer is a virtual OS that simulates multiple customer-service channels (web, IVR, WhatsApp, kiosk, email) and orchestrates them through a single AI agent. The goal is to let a customer switch channels without repeating themselves while the agent keeps a unified, structured memory of the entire journey.
 
