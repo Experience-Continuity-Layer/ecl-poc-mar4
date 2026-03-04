@@ -1,0 +1,40 @@
+---
+description: AI integration patterns — provider client, agent turn flow, context extraction
+globs: src/core/ai/**
+alwaysApply: false
+---
+
+# AI integration patterns
+
+## Provider client (`client.ts`)
+
+Direct HTTP calls to each provider — no SDK wrappers. Each provider function (`callOpenAI`, `callAnthropic`, `callGoogle`, `callHuggingFace`, `callDeepSeek`) handles its own request format, auth headers, and response parsing.
+
+Adding a new provider:
+1. Add the provider to `AgentProvider` union in `agent-context/types.ts`.
+2. Add to `providerSchema` in `agent-context/schema.ts`.
+3. Add default model in `providerModels` map in `store.ts`.
+4. Implement `callNewProvider()` in `client.ts` and add case to `requestAIReply()` switch.
+
+## Agent turn flow (`agent-module.ts`)
+
+`runAgentTurn(channel, userMessage)` orchestrates every interaction:
+1. Validate channel is enabled in `agentConfig.channels`.
+2. `logMessage(channel, "user", userMessage)` — writes to store.
+3. Scope conversation history based on `shareContextAcrossChannels`.
+4. `POST /api/agent/respond` with context + systemPrompt + history.
+5. `logMessage(channel, "assistant", reply)` — writes reply to store.
+6. Fire-and-forget `runContextExtraction(channel)` — post-turn sense-making.
+
+## Context extraction (`context-extraction.ts`)
+
+- `buildExtractionPrompt()` creates a structured JSON extraction prompt.
+- `parseExtractionResponse()` validates with `extractedContextSchema`.
+- `applyExtractedContext()` merges inferred data into the store.
+- Extraction is non-blocking: a failure must never break the main flow.
+
+## Rules
+
+- Provider config is always runtime (from `AgentContext.agentConfig`), never from `.env`.
+- Never mask provider errors with simulated responses — throw and surface them.
+- API key validation: refuse to call if key is empty.

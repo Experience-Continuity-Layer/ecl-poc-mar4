@@ -1,0 +1,414 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --surface-canvas: #f4f4f5;
+  --surface-panel: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-subtle: #f1f5f9;
+  --surface-border: #d4d4d8;
+  --type-step-2xs: 11px;
+  --type-step-xs: 12px;
+  --type-step-sm: 14px;
+  --type-step-md: 16px;
+  --type-step-lg: 18px;
+  --type-step-xl: 22px;
+  --type-step-2xl: 28px;
+  --layout-surface-pad: 24px;
+  --layout-section-pad: 16px;
+  --layout-control-pad-x: 12px;
+  --layout-control-pad-y: 7px;
+  --layout-gap-xs: 6px;
+  --layout-gap-sm: 10px;
+  --layout-gap-md: 14px;
+  --layout-gap-lg: 20px;
+  --layout-gap-xl: 28px;
+  --layout-field-label-gap: 6px;
+  --layout-field-group-gap: 14px;
+  --layout-divider-color: #e4e4e7;
+  --layout-divider-width: 1px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.type-display {
+  font-size: var(--type-step-2xl);
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.type-title {
+  font-size: var(--type-step-xl);
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.type-subtitle {
+  font-size: var(--type-step-lg);
+  line-height: 1.35;
+  font-weight: 560;
+}
+
+.type-body {
+  font-size: var(--type-step-md);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.type-body-sm {
+  font-size: var(--type-step-sm);
+  line-height: 1.45;
+  font-weight: 450;
+}
+
+.type-label {
+  font-size: var(--type-step-xs);
+  line-height: 1.35;
+  font-weight: 550;
+}
+
+.type-caption {
+  font-size: var(--type-step-2xs);
+  line-height: 1.35;
+  font-weight: 450;
+}
+
+.layout-surface {
+  padding: var(--layout-surface-pad);
+}
+
+.layout-section {
+  padding: var(--layout-section-pad);
+}
+
+.layout-pad-none {
+  padding: 0;
+}
+
+.layout-stack-xs > * + * {
+  margin-top: var(--layout-gap-xs);
+}
+
+.layout-stack-sm > * + * {
+  margin-top: var(--layout-gap-sm);
+}
+
+.layout-stack-md > * + * {
+  margin-top: var(--layout-gap-md);
+}
+
+.layout-stack-lg > * + * {
+  margin-top: var(--layout-gap-lg);
+}
+
+.layout-stack-xl > * + * {
+  margin-top: var(--layout-gap-xl);
+}
+
+.layout-divider {
+  border-bottom: var(--layout-divider-width) solid var(--layout-divider-color);
+}
+
+.layout-divider-top {
+  border-top: var(--layout-divider-width) solid var(--layout-divider-color);
+}
+
+.layout-field > * + * {
+  margin-top: var(--layout-field-label-gap);
+}
+
+.layout-fields > * + * {
+  margin-top: var(--layout-field-group-gap);
+}
+
+/* --- Switch toggle --- */
+.switch-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--surface-border);
+  transition: background 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.switch-track[data-checked="true"] {
+  background: #18181b;
+}
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.switch-track[data-checked="true"] .switch-thumb {
+  transform: translateX(16px);
+}
+
+/* --- Styled range slider --- */
+.slider-field input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+.slider-field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #18181b;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  margin-top: -5px;
+}
+.slider-field input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #18181b;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+.slider-field input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+}
+.slider-field input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* --- Accordion animation --- */
+.accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.accordion-content[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.accordion-inner {
+  overflow: hidden;
+}
+
+/* --- Status dot pulse --- */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.status-dot-pulse {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* --- Tab bar --- */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-subtle);
+  border-radius: 10px;
+}
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: var(--type-step-xs);
+  font-weight: 550;
+  color: #71717a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  border: none;
+  background: transparent;
+}
+.tab-bar-item:hover {
+  color: #3f3f46;
+}
+.tab-bar-item[data-active="true"] {
+  background: var(--surface-card);
+  color: #18181b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Phone frame --- */
+.phone-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 9 / 19.5;
+  border-radius: 48px;
+  background: #18181b;
+  padding: 6px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    0 8px 20px rgba(0, 0, 0, 0.12),
+    0 25px 50px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.phone-notch {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 28px;
+  border-radius: 0 0 16px 16px;
+  background: #18181b;
+  z-index: 20;
+}
+
+.phone-screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 42px;
+  background: #ffffff;
+}
+
+.phone-status-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 20px 4px;
+  flex-shrink: 0;
+}
+
+.phone-status-time {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.phone-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.phone-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.phone-home-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.phone-home-bar {
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(24, 24, 27, 0.2);
+}
+
+/* --- Handoff banner --- */
+.handoff-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
+  font-size: 12px;
+  color: #166534;
+  flex-shrink: 0;
+}
+
+.handoff-banner-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dcfce7;
+  flex-shrink: 0;
+}
+
+.handoff-banner-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.handoff-banner-text {
+  min-width: 0;
+}
+
+.handoff-banner-time {
+  font-size: 11px;
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+/* Keep scrolling behavior while hiding visual scrollbars across the shell UI. */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

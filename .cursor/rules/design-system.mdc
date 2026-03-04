@@ -1,0 +1,39 @@
+---
+description: Design system conventions — primitives, tokens, and styling patterns
+globs: src/components/shell/tooling/**
+alwaysApply: false
+---
+
+# Design system conventions
+
+## Primitives
+
+All shared UI primitives live in `src/components/shell/tooling/design-system/primitives.tsx`.
+Do not scatter one-off components across window files — extract reusable pieces to `primitives.tsx`.
+
+Current primitives: ToolAppSurface, ToolSection, FieldLabel, FieldGroup, Stack, Inline,
+TypeDisplay, TypeTitle, TypeSubtitle, TypeBody, TypeCaption, PillToggle, SegmentControl,
+ActionButton, SwitchToggle, TabBar, Accordion, Tag, StatusDot, SliderField, OptionCard,
+SettingRow, TextInput, TextAreaInput, SelectInput, RangeSlider, StatusBadge, PhoneFrame,
+HandoffBanner, toDisplayLabel.
+
+## Tokens
+
+CSS variables in `globals.css`:
+- Surfaces: `--surface-canvas`, `--surface-panel`, `--surface-card`, `--surface-subtle`, `--surface-border`
+- Typography: `--type-step-2xs` through `--type-step-2xl`
+- Layout: `--layout-gap-xs/sm/md/lg/xl`, `--layout-surface-pad`, `--layout-section-pad`, `--layout-control-pad-x/y`
+
+Always use token variables, not raw pixel values, for spacing and surface colors.
+
+## Styling conventions
+
+- Tailwind utility classes + CSS variable references (`bg-[var(--surface-card)]`).
+- Lucide React for icons. Motion library for animations.
+- Translucent/glass aesthetic where appropriate (backdrop-blur, border opacity).
+- Type classes: `type-display`, `type-title`, `type-subtitle`, `type-body`, `type-body-sm`, `type-label`, `type-caption`.
+
+## Design System Tool sync
+
+After adding or modifying any primitive in `primitives.tsx`, update
+`src/components/shell/windows/tool-design-system-window.tsx` to reflect the change.

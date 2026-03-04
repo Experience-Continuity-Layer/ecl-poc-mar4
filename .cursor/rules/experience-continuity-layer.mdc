@@ -1,0 +1,62 @@
+---
+description: Experience Continuity Layer POC — project-wide architecture, stack, and workflow rules
+alwaysApply: true
+---
+
+# Experience Continuity Layer
+
+A virtual OS with channel simulations (web, IVR, WhatsApp, kiosk, email).
+An AI agent orchestrates all channels so a customer can switch without repeating themselves.
+
+## Stack (decided)
+
+Next.js 16 (App Router) · React 19 · TypeScript 5 · Zustand + Immer · Zod · Tailwind 4 · Lucide · Motion
+
+## File structure
+
+```
+src/
+  app/
+    api/agent/respond/route.ts         # POST — agent reply
+    api/agent/extract-context/route.ts  # POST — post-turn context extraction
+    page.tsx                            # renders <VirtualOS />
+    globals.css                         # design tokens + component CSS
+  core/
+    agent-context/
+      types.ts          # TypeScript interfaces (source of truth)
+      schema.ts         # Zod schemas for validation
+      store.ts          # Zustand store + exported helpers
+      prompt-builder.ts # builds system prompt from AgentContext
+    ai/
+      types.ts              # AgentAIRequest interface
+      client.ts             # direct HTTP calls per provider
+      agent-module.ts       # runAgentTurn orchestration
+      context-extraction.ts # extraction prompt + parser
+  components/shell/
+    virtual-os.tsx                     # app definitions + OS layout
+    taskbar/taskbar.tsx
+    wallpaper-switcher.tsx
+    window-manager/types.ts            # ShellAppId, AppDefinition, WindowState
+    window-manager/use-window-manager.ts
+    tooling/design-system/primitives.tsx  # all reusable UI primitives
+    windows/                             # one file per window/channel
+```
+
+## Core architecture — non-negotiable
+
+- `AgentContext` is the single shared memory. Every channel reads/writes it.
+- AI calls are real (OpenAI, Anthropic, Google, HuggingFace). Provider, model, and key are runtime-configurable via `agentConfig`.
+- System prompt is always built from `AgentContext` via `buildSystemPrompt()`.
+- Channel handoffs are written to `AgentContext.channelHistory`.
+- Channel IDs: `web`, `ivr`, `whatsapp`, `kiosk`, `email`.
+- App IDs: `web-browser`, `ivr-phone`, `whatsapp`, `kiosk`, `email-client`, plus tool windows.
+- Post-turn context extraction is fire-and-forget — never block the main flow.
+- Errors from providers must be surfaced, never masked with simulated responses.
+
+## How to work
+
+- State architectural decisions explicitly before implementing.
+- One phase at a time. Stop and wait before moving on.
+- If reading an existing file with @, say so before modifying it.
+- Run `typecheck` after significant changes.
+- Periodically (for example after 5+ significant iterations), consider running the `optimize-engine` skill to review transcript history and propose rule/skill updates.

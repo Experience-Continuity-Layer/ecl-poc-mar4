@@ -1,0 +1,48 @@
+---
+description: AgentContext modification contract — mandatory multi-file update chain
+globs: src/core/agent-context/**
+alwaysApply: false
+---
+
+# AgentContext modification contract
+
+When adding, changing, or removing any field on AgentContext, **all five files must be updated in order**.
+Skipping a step causes runtime bugs or silent data loss.
+
+## Mandatory chain
+
+1. **`types.ts`** — add/change the TypeScript interface or type alias.
+2. **`schema.ts`** — update the matching Zod schema. Use `.nullable().default(null)` for optional inferred fields; `.default([])` for arrays.
+3. **`store.ts`** — update `initialContext` with the default value. Add or update store actions if the field needs write helpers (use the Immer `produce` pattern).
+4. **`prompt-builder.ts`** — include the new field in `buildSystemPrompt()` so the AI sees it. Format it as a readable line or section.
+5. **UI component** — wire the field to a control (e.g. in Agent Control Center, Customer Profile Simulator) or display (e.g. Context Inspector).
+
+## Store action pattern
+
+```typescript
+actionName: (args) =>
+  set((state) => ({
+    context: produce(state.context, (draft) => {
+      draft.field = newValue;
+    }),
+  })),
+```
+
+Always export a standalone helper alongside the store method:
+
+```typescript
+export function actionName(args) {
+  useAgentContextStore.getState().actionName(args);
+}
+```
+
+## Extraction fields
+
+If the new field should be inferred from conversation, also update:
+- `context-extraction.ts` — add it to the extraction prompt and `EMPTY_EXTRACTION`.
+- `extractedContextSchema` in `schema.ts`.
+- `applyExtractedContext` in `store.ts`.
+
+## Verification
+
+After completing the chain, verify via the Context Inspector window that the field renders correctly.
