@@ -193,7 +193,12 @@ export function WhatsAppWindow() {
           </div>
         )}
 
-        <form className={styles.inputBar} onSubmit={handleSend}>
+        <form
+          className={styles.inputBar}
+          onSubmit={handleSend}
+          autoComplete="off"
+          data-1p-ignore
+        >
           <input
             ref={inputRef}
             className={styles.input}

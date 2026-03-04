@@ -1569,7 +1569,12 @@ export function WebBrowserWindow({
                 <span className={styles.chatThinkingDot} />
               </div>
             )}
-            <form className={styles.chatInputBar} onSubmit={handleSendChat}>
+            <form
+              className={styles.chatInputBar}
+              onSubmit={handleSendChat}
+              autoComplete="off"
+              data-1p-ignore
+            >
               <input
                 ref={chatInputRef}
                 className={styles.chatInput}

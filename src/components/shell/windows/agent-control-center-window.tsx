@@ -445,7 +445,12 @@ function AgentChatTab({
       </div>
 
       {/* Input */}
-      <form className="flex items-center gap-2" onSubmit={onSubmit}>
+      <form
+        className="flex items-center gap-2"
+        onSubmit={onSubmit}
+        autoComplete="off"
+        data-1p-ignore
+      >
         <div className="flex-1">
           <TextInput value={input} onChange={setInput} placeholder="Type a message..." />
         </div>
