@@ -16,11 +16,11 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { ArrowUpRight, MessageCircle, SendHorizonal } from "lucide-react";
+import { ArrowUpRight, MessageCircle, Monitor, PhoneCall, SendHorizonal } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { logBehavioralSignal, logChannelEvent, updateContext, useAgentContextStore } from "@/core/agent-context/store";
 import type { ConversationEntry } from "@/core/agent-context/types";
-import { runAgentTurn } from "@/core/ai/agent-module";
+import { runAgentTurn, runHandoffGreeting } from "@/core/ai/agent-module";
 import {
   aureliaAccountOrders,
   aureliaAccountPreferences,
@@ -111,12 +111,21 @@ function getPageUrl(page: BrowserPage, model?: Model): string {
   }
 }
 
+const handoffChannelMeta: Record<string, { label: string; icon: typeof MessageCircle; appId: ShellAppId }> = {
+  whatsapp: { label: "WhatsApp", icon: MessageCircle, appId: "whatsapp" },
+  ivr: { label: "Phone Call", icon: PhoneCall, appId: "ivr-phone" },
+  kiosk: { label: "Kiosk", icon: Monitor, appId: "kiosk" },
+  email: { label: "Email", icon: Mail, appId: "email-client" },
+};
+
 /* ═══════════════════════════════════════════ Component ═══ */
 
 export function WebBrowserWindow({
   onOpenWindow,
+  onNotifyWindow,
 }: {
   onOpenWindow?: (id: ShellAppId) => void;
+  onNotifyWindow?: (id: ShellAppId) => void;
 }) {
   const [activePage, setActivePage] = useState<BrowserPage>("home");
   const [selectedModelSlug, setSelectedModelSlug] = useState(models[0].slug);
@@ -132,7 +141,6 @@ export function WebBrowserWindow({
   const [chatInput, setChatInput] = useState("");
   const [isChatSending, setIsChatSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [phoneInput, setPhoneInput] = useState("");
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const launcherBtnRef = useRef<HTMLButtonElement>(null);
@@ -279,31 +287,17 @@ export function WebBrowserWindow({
     [activePage, chatInput, isChatSending, selectedModel.name],
   );
 
-  const handleSavePhone = useCallback(() => {
-    const trimmed = phoneInput.trim();
-    if (!trimmed || trimmed.length < 6) return;
-    updateContext("customer", {
-      ...useAgentContextStore.getState().context.customer,
-      phoneNumber: trimmed,
-    });
-    logBehavioralSignal({
-      channel: "web",
-      eventType: "info_revealed",
-      detail: "Provided messaging phone number",
-      confidence: 1,
-    });
-    setPhoneInput("");
-  }, [phoneInput]);
-
-  const handleHandoffToMessaging = useCallback(() => {
-    if (!customer.phoneNumber) return;
-    logChannelEvent(
-      "whatsapp",
-      "channel_switch",
-      "Handoff from web to whatsapp (phone verified)",
-    );
-    onOpenWindow?.("whatsapp");
-  }, [onOpenWindow, customer.phoneNumber]);
+  const handleHandoffToChannel = useCallback(
+    (channel: string) => {
+      const meta = handoffChannelMeta[channel];
+      if (!meta) return;
+      logChannelEvent(channel, "channel_switch", `Handoff from web to ${channel}`);
+      onOpenWindow?.(meta.appId);
+      onNotifyWindow?.(meta.appId);
+      runHandoffGreeting(channel).catch(() => {});
+    },
+    [onOpenWindow, onNotifyWindow],
+  );
 
   const syncedAccountRef = useRef(false);
   useEffect(() => {
@@ -1248,6 +1242,34 @@ export function WebBrowserWindow({
             <div className={styles.richInfoBody}>{segment.content}</div>
           </div>,
         );
+        continue;
+      }
+
+      if (segment.type === "handoff") {
+        const meta = handoffChannelMeta[segment.channel];
+        if (!meta) {
+          inlineBuffer.push(<span key={`hf-${i}`}>{segment.message}</span>);
+          continue;
+        }
+        const ChannelIcon = meta.icon;
+        elements.push(
+          <button
+            key={`handoff-${i}`}
+            type="button"
+            className={styles.richHandoffCard}
+            onClick={() => handleHandoffToChannel(segment.channel)}
+          >
+            <span className={styles.richHandoffIcon}>
+              <ChannelIcon size={14} />
+            </span>
+            <span className={styles.richHandoffBody}>
+              <span className={styles.richHandoffLabel}>Continue on {meta.label}</span>
+              <span className={styles.richHandoffMessage}>{segment.message}</span>
+            </span>
+            <ArrowUpRight size={14} className={styles.richHandoffArrow} />
+          </button>,
+        );
+        continue;
       }
     }
 
@@ -1494,16 +1516,6 @@ export function WebBrowserWindow({
                 </div>
               </div>
               <div className={styles.chatHeaderRight}>
-                {webConversation.length > 0 && customer.phoneNumber && !isChatSending && (
-                  <button
-                    type="button"
-                    className={styles.chatHeaderHandoffBtn}
-                    onClick={handleHandoffToMessaging}
-                  >
-                    <ArrowUpRight className="h-3 w-3" />
-                    Continue in Messaging
-                  </button>
-                )}
                 <button
                   type="button"
                   className={styles.chatHeaderClose}
@@ -1555,30 +1567,6 @@ export function WebBrowserWindow({
                 <span className={styles.chatThinkingDot} />
                 <span className={styles.chatThinkingDot} />
                 <span className={styles.chatThinkingDot} />
-              </div>
-            )}
-            {webConversation.length > 0 && !customer.phoneNumber && (
-              <div className={styles.chatPhoneCaptureStrip}>
-                <div className={styles.chatPhoneCaptureWrap}>
-                  <input
-                    type="tel"
-                    className={styles.chatPhoneCaptureInput}
-                    value={phoneInput}
-                    onChange={(e) => setPhoneInput(e.target.value)}
-                    placeholder="Phone number for messaging"
-                  />
-                  <span className={styles.chatPhoneCaptureHint}>
-                    Enter your number to continue the conversation in the messaging app
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className={styles.chatPhoneCaptureBtn}
-                  onClick={handleSavePhone}
-                  disabled={!phoneInput.trim() || phoneInput.trim().length < 6}
-                >
-                  Save & continue
-                </button>
               </div>
             )}
             <form className={styles.chatInputBar} onSubmit={handleSendChat}>

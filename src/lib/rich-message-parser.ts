@@ -3,7 +3,8 @@ export type RichSegment =
   | { type: "model-card"; slug: string }
   | { type: "link"; label: string; target: string }
   | { type: "action"; label: string; actionId: string }
-  | { type: "info"; title: string; content: string };
+  | { type: "info"; title: string; content: string }
+  | { type: "handoff"; channel: string; message: string };
 
 export function parseRichMessage(raw: string): RichSegment[] {
   const segments: RichSegment[] = [];
@@ -71,6 +72,12 @@ function parseMarker(inner: string): RichSegment | null {
     const [title, content] = splitPair(trimmedRest);
     if (!title || !content) return null;
     return { type: "info", title, content };
+  }
+
+  if (trimmedKind === "handoff") {
+    const [channel, message] = splitPair(trimmedRest);
+    if (!channel || !message) return null;
+    return { type: "handoff", channel, message };
   }
 
   return null;

@@ -122,9 +122,10 @@ function renderWindowContent(
   title: string,
   description: string,
   openWindow: (id: ShellAppId) => void,
+  notifyWindow?: (id: ShellAppId) => void,
 ) {
   if (appId === "web-browser") {
-    return <WebBrowserWindow onOpenWindow={openWindow} />;
+    return <WebBrowserWindow onOpenWindow={openWindow} onNotifyWindow={notifyWindow} />;
   }
   if (appId === "agent-control-center") {
     return <AgentControlCenterWindow />;
@@ -156,6 +157,7 @@ export function VirtualOS() {
     focusWindow,
     setWindowPosition,
     setWindowSize,
+    notifyWindow,
   } = useWindowManager(appDefinitions);
   const [clock, setClock] = useState(() =>
     new Intl.DateTimeFormat(undefined, {
@@ -318,7 +320,7 @@ export function VirtualOS() {
               onMove={(x, y) => setWindowPosition(windowState.id, x, y)}
               onResize={(width, height) => setWindowSize(windowState.id, width, height)}
             >
-              {renderWindowContent(app.id, app.title, app.description, openWindow)}
+              {renderWindowContent(app.id, app.title, app.description, openWindow, notifyWindow)}
             </DesktopWindow>
           );
         })}

@@ -25,6 +25,7 @@ export function useWindowManager(apps: AppDefinition[]) {
         id: app.id,
         isOpen: Boolean(app.startsOpen),
         isMinimized: false,
+        hasNotification: false,
         position: app.initialPosition,
         size: app.initialSize,
         zIndex: 10 + index,
@@ -123,6 +124,7 @@ export function useWindowManager(apps: AppDefinition[]) {
         [id]: {
           ...previous[id],
           zIndex,
+          hasNotification: false,
         },
       }));
       return zIndex;
@@ -138,11 +140,30 @@ export function useWindowManager(apps: AppDefinition[]) {
           ...previous[id],
           isOpen: true,
           isMinimized: false,
+          hasNotification: false,
           zIndex,
         },
       }));
       return zIndex;
     });
+  };
+
+  const notifyWindow = (id: ShellAppId) => {
+    setWindows((previous) => {
+      const windowState = previous[id];
+      if (!windowState || (windowState.isOpen && !windowState.isMinimized)) return previous;
+      return {
+        ...previous,
+        [id]: { ...windowState, hasNotification: true },
+      };
+    });
+  };
+
+  const clearNotification = (id: ShellAppId) => {
+    setWindows((previous) => ({
+      ...previous,
+      [id]: { ...previous[id], hasNotification: false },
+    }));
   };
 
   const closeWindow = (id: ShellAppId) => {
@@ -206,5 +227,7 @@ export function useWindowManager(apps: AppDefinition[]) {
     focusWindow,
     setWindowPosition,
     setWindowSize,
+    notifyWindow,
+    clearNotification,
   };
 }

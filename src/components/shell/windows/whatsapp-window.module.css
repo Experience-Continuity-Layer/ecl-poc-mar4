@@ -154,6 +154,27 @@
   line-height: 1.5;
 }
 
+/* ─── Connecting state ─── */
+
+.connectingState {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 10px 16px;
+  background: var(--msg-assistant);
+  border: 1px solid var(--msg-border);
+  border-radius: var(--msg-radius) var(--msg-radius) var(--msg-radius) var(--msg-radius-sm);
+  animation: bubbleIn 0.2s var(--ease) both;
+}
+
+.connectingLabel {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--msg-meta);
+  letter-spacing: 0.02em;
+}
+
 /* ─── Message bubbles ─── */
 
 .bubble {

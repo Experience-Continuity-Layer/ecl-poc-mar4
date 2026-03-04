@@ -107,6 +107,7 @@ export const extractedContextSchema = z.object({
   inferredEmotionalState: z.string().nullable().default(null),
   inferredName: z.string().nullable().default(null),
   inferredLanguage: z.string().nullable().default(null),
+  inferredPhoneNumber: z.string().nullable().default(null),
   signals: z.array(extractedSignalSchema).default([]),
   topics: z.array(z.string()).default([]),
   mentionedProducts: z.array(z.string()).default([]),

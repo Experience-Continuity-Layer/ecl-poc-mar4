@@ -24,6 +24,7 @@ export function Taskbar({ apps, windows, onLaunch, wallpaperTone }: TaskbarProps
           const isRunning = state.isOpen;
           const isMinimized = state.isMinimized;
           const isActive = isRunning && !isMinimized;
+          const hasNotification = state.hasNotification;
           return (
             <motion.button
               key={app.id}
@@ -73,6 +74,13 @@ export function Taskbar({ apps, windows, onLaunch, wallpaperTone }: TaskbarProps
                   aria-hidden
                 />
                 <AppIcon className="relative z-10 h-5 w-5" strokeWidth={1.85} />
+                {hasNotification && (
+                  <span
+                    className="absolute right-1 top-1 z-20 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500"
+                    style={{ boxShadow: "0 0 4px rgba(16, 185, 129, 0.5)" }}
+                    aria-label="New notification"
+                  />
+                )}
               </motion.span>
 
               <motion.span

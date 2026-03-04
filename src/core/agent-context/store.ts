@@ -230,6 +230,9 @@ export const useAgentContextStore = create<AgentContextStore>((set, get) => ({
         if (extracted.inferredLanguage && !draft.customer.language) {
           draft.customer.language = extracted.inferredLanguage;
         }
+        if (extracted.inferredPhoneNumber && !draft.customer.phoneNumber) {
+          draft.customer.phoneNumber = extracted.inferredPhoneNumber;
+        }
 
         for (const sig of extracted.signals) {
           draft.signals.push({

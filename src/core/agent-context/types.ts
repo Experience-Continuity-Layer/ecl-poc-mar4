@@ -96,6 +96,7 @@ export interface ExtractedContext {
   inferredEmotionalState: string | null;
   inferredName: string | null;
   inferredLanguage: string | null;
+  inferredPhoneNumber: string | null;
   signals: ExtractedSignal[];
   topics: string[];
   mentionedProducts: string[];

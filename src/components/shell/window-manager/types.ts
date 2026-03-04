@@ -26,6 +26,7 @@ export interface WindowState {
   id: ShellAppId;
   isOpen: boolean;
   isMinimized: boolean;
+  hasNotification: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
   zIndex: number;

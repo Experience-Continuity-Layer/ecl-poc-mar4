@@ -50,6 +50,7 @@ export function WhatsAppWindow() {
     (s) => s.context.agentConfig.channels,
   );
   const customer = useAgentContextStore((s) => s.context.customer);
+  const contextSummary = useAgentContextStore((s) => s.context.contextSummary);
 
   const isEnabled = channels.includes(CHANNEL_ID);
 
@@ -64,6 +65,7 @@ export function WhatsAppWindow() {
   );
 
   const showHandoffBanner = latestHandoff !== null;
+  const isAwaitingGreeting = showHandoffBanner && messages.length === 0;
 
   useEffect(() => {
     const el = messagesRef.current;
@@ -124,7 +126,7 @@ export function WhatsAppWindow() {
         {showHandoffBanner && latestHandoff && (
           <HandoffBanner
             fromChannel={latestHandoff.from}
-            summary={latestHandoff.summary}
+            summary={contextSummary || latestHandoff.summary}
             timestamp={latestHandoff.timestamp}
           />
         )}
@@ -140,6 +142,14 @@ export function WhatsAppWindow() {
                 Send a message to start a conversation, or switch from another
                 channel to continue here.
               </p>
+            </div>
+          )}
+          {isAwaitingGreeting && (
+            <div className={styles.connectingState}>
+              <span className={styles.thinkingDot} />
+              <span className={styles.thinkingDot} />
+              <span className={styles.thinkingDot} />
+              <span className={styles.connectingLabel}>Connecting…</span>
             </div>
           )}
 

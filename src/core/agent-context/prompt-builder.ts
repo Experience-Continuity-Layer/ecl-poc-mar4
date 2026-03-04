@@ -228,8 +228,22 @@ export function buildSystemPrompt(
           "  {{link:label|page}} — navigate the site. Valid page targets: home, models, model-detail/SLUG, ownership, support, my-account.",
           "  {{action:label|action-id}} — propose an action. Valid action IDs: book-test-drive, open-account, view-orders, go-support.",
           "  {{info:title|content}} — highlight an important fact in a callout.",
+          "  {{handoff:channel|message}} — propose switching to another channel. Valid channels: whatsapp, ivr, kiosk, email. The UI renders a confirmation card the customer can click to switch.",
           "",
           "Keep the natural language answer readable even if markers are stripped out. Do not wrap markers in backticks or other formatting.",
+          "",
+          "CHANNEL SWITCHING RULES:",
+          "- You can suggest switching to another channel when it would genuinely benefit the customer.",
+          "- Use the {{handoff:channel|message}} marker to propose a switch. The message should briefly explain why the other channel is better for the next step.",
+          "- Only suggest a switch when there is a clear benefit:",
+          "  • WhatsApp/messaging: for ongoing status updates, asynchronous follow-ups, or when the customer prefers mobile.",
+          "  • Phone/IVR: for complex verbal explanations, urgent matters, or when text is insufficient.",
+          "  • Email: for formal documentation, receipts, or detailed information the customer needs to keep.",
+          "  • Kiosk: only when the customer is at a physical location.",
+          "- If the customer explicitly asks to switch channels (e.g. 'can I continue on WhatsApp?'), comply naturally.",
+          `- If the customer wants to switch to WhatsApp or IVR and their phone number is not known (currently: ${context.customer.phoneNumber ?? "unknown"}), ask for it conversationally within the same reply BEFORE using the handoff marker. Once they provide it in a follow-up message, then include the handoff marker.`,
+          "- Never pressure or force a channel switch. The customer always decides.",
+          "- Do NOT include more than one handoff marker per reply.",
         ]
       : [];
 
@@ -238,11 +252,12 @@ export function buildSystemPrompt(
       ? [
           "",
           "You are responding on the messaging channel. Keep replies conversational and slightly shorter than on the web.",
-          "Do NOT use rich UI markers ({{model:...}}, {{link:...}}, etc.) — this channel renders plain text only.",
+          "Do NOT use rich UI markers ({{model:...}}, {{link:...}}, {{handoff:...}}, etc.) — this channel renders plain text only.",
           "Avoid asking for information already in context — especially contact details (phone, name) and prior intents.",
           ...(context.channelHistory.some((h) => h.to === "whatsapp")
             ? [
-                "The customer was handed off from another channel. Acknowledge the switch succinctly (e.g. 'I'll pick up from where we left off on the website.') and continue without asking them to repeat anything.",
+                "The customer was handed off from another channel. An automatic greeting message has already been sent acknowledging the transition.",
+                "Do NOT re-introduce yourself or re-acknowledge the channel switch — just continue the conversation naturally from where it left off.",
               ]
             : []),
         ]

@@ -49,6 +49,7 @@ Extract the following as JSON. Only include fields where you have evidence — l
   "inferredEmotionalState": string or null — e.g. "frustrated", "neutral", "anxious", "satisfied", "confused",
   "inferredName": string or null — only if the customer explicitly stated their name,
   "inferredLanguage": string or null — only if clearly identifiable,
+  "inferredPhoneNumber": string or null — only if the customer explicitly shared a phone number in the conversation,
   "signals": [
     {
       "type": one of [${VALID_SIGNAL_TYPES.map((t) => `"${t}"`).join(", ")}],
@@ -79,6 +80,7 @@ const EMPTY_EXTRACTION: ExtractedContext = {
   inferredEmotionalState: null,
   inferredName: null,
   inferredLanguage: null,
+  inferredPhoneNumber: null,
   signals: [],
   topics: [],
   mentionedProducts: [],
