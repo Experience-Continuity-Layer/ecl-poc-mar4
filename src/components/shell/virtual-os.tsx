@@ -244,7 +244,21 @@ export function VirtualOS() {
           >
             E
           </span>
-          <span className="font-medium tracking-tight">ECL POC Beta</span>
+          <span className="font-medium tracking-tight">ECL</span>
+          <span className="relative inline-flex items-center group">
+            <span
+              className={`inline-flex h-5 items-center rounded-md px-2 text-[11px] font-medium ${
+                wallpaperTone === "dark" ? "bg-zinc-900/44 text-zinc-100" : "bg-white/45 text-zinc-700"
+              }`}
+            >
+              POC Beta
+            </span>
+            <span
+              className="pointer-events-none absolute left-0 top-full z-[185] mt-1 w-64 rounded-md bg-zinc-900/90 px-3 py-2 text-center text-[11px] font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+            >
+              Experimental preview build. Not for broad use or sharing yet.
+            </span>
+          </span>
         </div>
         <div ref={wallpaperMenuRef} className="relative flex items-center gap-1.5">
           <button
