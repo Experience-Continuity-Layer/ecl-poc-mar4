@@ -123,13 +123,6 @@ export function buildSystemPrompt(
   context: AgentContext,
   channelMetadata?: Record<string, string>,
 ): string {
-  const fullHistory = context.conversationHistory
-    .map(
-      (message) =>
-        `[${message.timestamp}] (${message.channel}/${message.role}) ${message.content}`,
-    )
-    .join("\n");
-
   const integrationEntries = Object.entries(context.integrations);
 
   const integrationStatusLines = integrationEntries
@@ -298,9 +291,6 @@ export function buildSystemPrompt(
     `Active channel: ${context.activeChannel}`,
     "",
     ...buildUnknownContextInstructions(context),
-    "",
-    "Full conversation history:",
-    fullHistory || "No previous messages.",
     "",
     "Data integration status:",
     integrationStatusLines || "No integrations configured.",

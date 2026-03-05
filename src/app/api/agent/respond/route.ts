@@ -15,16 +15,27 @@ const requestSchema = z.object({
   conversationHistory: z.array(conversationEntrySchema).optional(),
 });
 
+const providerEnvKeys: Record<string, string> = {
+  openai: process.env.OPENAI_API_KEY ?? "",
+  anthropic: process.env.ANTHROPIC_API_KEY ?? "",
+  google: process.env.GOOGLE_API_KEY ?? "",
+  huggingface: process.env.HUGGINGFACE_API_KEY ?? "",
+  deepseek: process.env.DEEPSEEK_API_KEY ?? "",
+};
+
 export async function POST(request: Request) {
   try {
+    const headerApiKey = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
     const json = await request.json();
     const parsed = requestSchema.parse(json);
+    const provider = parsed.context.agentConfig.provider;
+    const apiKey = headerApiKey || providerEnvKeys[provider] || "";
     const systemPrompt = parsed.systemPrompt ?? buildSystemPrompt(parsed.context);
 
     const assistantReply = await requestAIReply({
-      provider: parsed.context.agentConfig.provider,
+      provider,
       model: parsed.context.agentConfig.model,
-      apiKey: parsed.context.agentConfig.apiKey,
+      apiKey,
       systemPrompt,
       temperature: parsed.context.agentConfig.temperature,
       maxOutputTokens: parsed.context.agentConfig.maxOutputTokens,
