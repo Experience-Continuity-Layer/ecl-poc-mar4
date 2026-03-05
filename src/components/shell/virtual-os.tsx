@@ -244,7 +244,7 @@ export function VirtualOS() {
           >
             E
           </span>
-          <span className="font-medium tracking-tight">ECL</span>
+          <span className="font-medium tracking-tight">ECL POC Beta</span>
         </div>
         <div ref={wallpaperMenuRef} className="relative flex items-center gap-1.5">
           <button

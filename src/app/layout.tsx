@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Experience Continuity Layer",
+  title: "ECL POC Beta",
   description: "Multi-channel continuity orchestration POC",
 };
 
