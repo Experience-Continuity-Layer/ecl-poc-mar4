@@ -141,6 +141,7 @@ export function WebBrowserWindow({
   const [chatInput, setChatInput] = useState("");
   const [isChatSending, setIsChatSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [failedChatMessage, setFailedChatMessage] = useState<string | null>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const launcherBtnRef = useRef<HTMLButtonElement>(null);
@@ -252,16 +253,14 @@ export function WebBrowserWindow({
     setChatError(null);
   }, []);
 
-  const handleSendChat = useCallback(
-    async (event?: React.FormEvent) => {
-      if (event) event.preventDefault();
-      const trimmed = chatInput.trim();
-      if (!trimmed || isChatSending) return;
-
+  const sendChat = useCallback(
+    async (message: string) => {
+      if (!message || isChatSending) return;
       setIsChatSending(true);
       setChatError(null);
+      setFailedChatMessage(null);
       try {
-        await runAgentTurn("web", trimmed, {
+        await runAgentTurn("web", message, {
           currentPage: activePage,
           pageTitle:
             activePage === "model-detail"
@@ -278,13 +277,24 @@ export function WebBrowserWindow({
         });
         setChatInput("");
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to send message.";
-        setChatError(message);
+        const msg = error instanceof Error ? error.message : "Unable to send message.";
+        setChatError(msg);
+        setFailedChatMessage(message);
       } finally {
         setIsChatSending(false);
       }
     },
-    [activePage, chatInput, isChatSending, selectedModel.name],
+    [activePage, isChatSending, selectedModel.name],
+  );
+
+  const handleSendChat = useCallback(
+    (event?: React.FormEvent) => {
+      if (event) event.preventDefault();
+      const trimmed = chatInput.trim();
+      if (!trimmed) return;
+      void sendChat(trimmed);
+    },
+    [chatInput, sendChat],
   );
 
   const handleHandoffToChannel = useCallback(
@@ -294,7 +304,10 @@ export function WebBrowserWindow({
       logChannelEvent(channel, "channel_switch", `Handoff from web to ${channel}`);
       onOpenWindow?.(meta.appId);
       onNotifyWindow?.(meta.appId);
-      runHandoffGreeting(channel).catch(() => {});
+      runHandoffGreeting(channel).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Context transfer failed.";
+        setChatError(`Handoff to ${channel}: ${msg}`);
+      });
     },
     [onOpenWindow, onNotifyWindow],
   );
@@ -1561,7 +1574,20 @@ export function WebBrowserWindow({
                 <div className={styles.chatTimestamp}>Last updated {lastMessageTime}</div>
               )}
             </div>
-            {chatError && <div className={styles.chatError}>{chatError}</div>}
+            {chatError && (
+              <div className={styles.chatError}>
+                {chatError}
+                {failedChatMessage && (
+                  <button
+                    onClick={() => void sendChat(failedChatMessage)}
+                    disabled={isChatSending}
+                    style={{ marginLeft: 8, textDecoration: "underline", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            )}
             {isChatSending && (
               <div className={styles.chatThinking}>
                 <span className={styles.chatThinkingDot} />

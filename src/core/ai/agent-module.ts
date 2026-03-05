@@ -8,13 +8,41 @@ import {
 import { buildSystemPrompt } from "@/core/agent-context/prompt-builder";
 import type { AgentChannel, ExtractedContext } from "@/core/agent-context/types";
 
+const MAX_HISTORY_MESSAGES = 30;
+
+function resolveErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return "Unexpected error.";
+  const msg = error.message;
+  if (msg.includes("401") || msg.toLowerCase().includes("api key") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("authentication")) {
+    return "Invalid API key — check your settings and try again.";
+  }
+  if (msg.includes("429") || msg.toLowerCase().includes("rate limit")) {
+    return "Rate limit reached — wait a moment and try again.";
+  }
+  if (msg.match(/5\d\d/) || msg.toLowerCase().includes("server error") || msg.toLowerCase().includes("unavailable")) {
+    return "Provider is temporarily unavailable — try again shortly.";
+  }
+  if (msg.toLowerCase().includes("missing api key")) {
+    return "No API key set — enter one in the Controls tab.";
+  }
+  return msg;
+}
+
 async function runContextExtraction(channel: string): Promise<void> {
   try {
     const context = useAgentContextStore.getState().context;
+    const apiKey = context.agentConfig.apiKey;
+    const sanitizedContext = {
+      ...context,
+      agentConfig: { ...context.agentConfig, apiKey: "" },
+    };
     const response = await fetch("/api/agent/extract-context", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context, channel }),
+      headers: {
+        "Content-Type": "application/json",
+        ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
+      },
+      body: JSON.stringify({ context: sanitizedContext, channel }),
     });
 
     if (!response.ok) return;
@@ -41,17 +69,23 @@ export async function runAgentTurn(
   logMessage(channel, "user", userMessage);
 
   const context = useAgentContextStore.getState().context;
-  const scopedConversationHistory = context.agentConfig.shareContextAcrossChannels
+  const apiKey = context.agentConfig.apiKey;
+  const scopedConversationHistory = (context.agentConfig.shareContextAcrossChannels
     ? context.conversationHistory
-    : context.conversationHistory.filter((entry) => entry.channel === channel);
+    : context.conversationHistory.filter((entry) => entry.channel === channel)
+  ).slice(-MAX_HISTORY_MESSAGES);
   const requestContext = {
     ...context,
+    agentConfig: { ...context.agentConfig, apiKey: "" },
     conversationHistory: scopedConversationHistory,
   };
 
   const response = await fetch("/api/agent/respond", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
+    },
     body: JSON.stringify({
       context: requestContext,
       channel,
@@ -62,7 +96,7 @@ export async function runAgentTurn(
 
   const data = (await response.json()) as { assistantReply?: string; error?: string };
   if (!response.ok || !data.assistantReply) {
-    throw new Error(data.error ?? "Unable to get assistant response.");
+    throw new Error(resolveErrorMessage(new Error(data.error ?? "Unable to get assistant response.")));
   }
 
   logMessage(channel, "assistant", data.assistantReply);
@@ -104,15 +138,24 @@ export async function runHandoffGreeting(targetChannel: string): Promise<string>
     "- Do NOT ask them to repeat anything.",
   ].filter(Boolean).join("\n");
 
-  const scopedHistory = context.agentConfig.shareContextAcrossChannels
+  const apiKey = context.agentConfig.apiKey;
+  const scopedHistory = (context.agentConfig.shareContextAcrossChannels
     ? context.conversationHistory
-    : context.conversationHistory.filter((e) => e.channel === targetChannel);
+    : context.conversationHistory.filter((e) => e.channel === targetChannel)
+  ).slice(-MAX_HISTORY_MESSAGES);
 
-  const requestContext = { ...context, conversationHistory: scopedHistory };
+  const requestContext = {
+    ...context,
+    agentConfig: { ...context.agentConfig, apiKey: "" },
+    conversationHistory: scopedHistory,
+  };
 
   const response = await fetch("/api/agent/respond", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
+    },
     body: JSON.stringify({
       context: requestContext,
       channel: targetChannel,

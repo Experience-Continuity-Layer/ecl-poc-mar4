@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Send, Loader2, Play, RotateCcw } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Send, Loader2, Play, RotateCcw, AlertCircle, Trash2 } from "lucide-react";
 import { runAgentTurn } from "@/core/ai/agent-module";
+import { parseRichMessage, type RichSegment } from "@/lib/rich-message-parser";
 import {
   clearContext,
   getDefaultModelForProvider,
@@ -185,7 +186,7 @@ function AgentControlsTab({ onError }: { onError: (msg: string) => void }) {
           ))}
         </div>
 
-        <FieldGroup label="API key" hint="Stored in memory only, never persisted">
+        <FieldGroup label="API key" hint="Sent as a request header — never included in the request body">
           <TextInput
             type="password"
             value={cfg.apiKey}
@@ -360,6 +361,45 @@ function AgentControlsTab({ onError }: { onError: (msg: string) => void }) {
   );
 }
 
+/* ─── Rich message renderer (control center) ─── */
+
+function ControlCenterRichMessage({ content }: { content: string }) {
+  const segments = parseRichMessage(content);
+  return (
+    <span className="type-body-sm text-zinc-900 leading-relaxed whitespace-pre-wrap">
+      {segments.map((seg: RichSegment, i: number) => {
+        if (seg.type === "text") return <span key={i}>{seg.content}</span>;
+        if (seg.type === "link") return (
+          <span key={i} className="inline-flex items-center gap-0.5 rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 text-xs">
+            ↗ {seg.label}
+          </span>
+        );
+        if (seg.type === "action") return (
+          <span key={i} className="inline-flex items-center gap-0.5 rounded bg-violet-50 px-1.5 py-0.5 text-violet-700 text-xs">
+            ⚡ {seg.label}
+          </span>
+        );
+        if (seg.type === "model-card") return (
+          <span key={i} className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-700 text-xs">
+            🚗 {seg.slug}
+          </span>
+        );
+        if (seg.type === "info") return (
+          <span key={i} className="my-1 block rounded bg-amber-50 px-2 py-1 text-amber-800 text-xs">
+            <strong>{seg.title}:</strong> {seg.content}
+          </span>
+        );
+        if (seg.type === "handoff") return (
+          <span key={i} className="inline-flex items-center gap-0.5 rounded bg-cyan-50 px-1.5 py-0.5 text-cyan-700 text-xs">
+            ⇢ {seg.channel}
+          </span>
+        );
+        return null;
+      })}
+    </span>
+  );
+}
+
 /* ─── Chat tab ─── */
 
 function AgentChatTab({
@@ -372,37 +412,84 @@ function AgentChatTab({
   const context = useAgentContextStore((s) => s.context);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    const message = input.trim();
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [context.conversationHistory.length, isLoading]);
+
+  const send = async (message: string) => {
     if (!message || isLoading) return;
     if (context.agentConfig.paused) { setError("Agent is paused."); return; }
     if (!context.agentConfig.channels.includes(context.activeChannel as AgentChannel)) {
       setError(`Active channel "${context.activeChannel}" is disabled.`);
       return;
     }
-    setInput("");
     setIsLoading(true);
     setError(null);
+    setFailedMessage(null);
     try {
       await runAgentTurn(context.activeChannel, message);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unexpected error.");
+      setFailedMessage(message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const message = input.trim();
+    if (!message) return;
+    setInput("");
+    await send(message);
+  };
+
+  const onClear = () => {
+    if (confirmClear) {
+      clearContext();
+      setError(null);
+      setFailedMessage(null);
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+    }
+  };
+
+  const totalMessages = context.conversationHistory.length;
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 rounded-xl bg-[var(--surface-card)] p-5">
       {/* Context bar */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Tag label={toDisplayLabel(context.agentConfig.provider)} variant="accent" />
-        <Tag label={toDisplayLabel(context.activeChannel)} />
-        <Tag label={toDisplayLabel(context.agentConfig.tone)} />
-        <Tag label={`P${context.agentConfig.proactivity}`} />
-        {context.agentConfig.modes.map((m) => <Tag key={m} label={m} />)}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+          <Tag label={toDisplayLabel(context.agentConfig.provider)} variant="accent" />
+          <Tag label={toDisplayLabel(context.activeChannel)} />
+          <Tag label={toDisplayLabel(context.agentConfig.tone)} />
+          <Tag label={`P${context.agentConfig.proactivity}`} />
+          {context.agentConfig.modes.map((m) => <Tag key={m} label={m} />)}
+          {totalMessages > 0 && (
+            <span className="type-caption text-zinc-400">{totalMessages} msg{totalMessages !== 1 ? "s" : ""}</span>
+          )}
+        </div>
+        {totalMessages > 0 && (
+          <button
+            onClick={onClear}
+            onBlur={() => setConfirmClear(false)}
+            title={confirmClear ? "Click again to confirm" : "Clear conversation"}
+            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition ${
+              confirmClear
+                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+            }`}
+          >
+            <Trash2 size={12} />
+            {confirmClear ? "Confirm?" : ""}
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -431,7 +518,10 @@ function AgentChatTab({
                     {toDisplayLabel(msg.channel)} · {new Date(msg.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
-                <p className="type-body-sm text-zinc-900 leading-relaxed">{msg.content}</p>
+                {msg.role === "assistant"
+                  ? <ControlCenterRichMessage content={msg.content} />
+                  : <p className="type-body-sm text-zinc-900 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                }
               </li>
             ))}
           </ul>
@@ -442,6 +532,7 @@ function AgentChatTab({
             <span className="type-caption">Agent is typing...</span>
           </div>
         ) : null}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -467,7 +558,23 @@ function AgentChatTab({
         </button>
       </form>
 
-      {error ? <p className="type-caption text-red-600">{error}</p> : null}
+      {error && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+          <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-500" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="type-caption text-red-700">{error}</p>
+            {failedMessage && (
+              <button
+                onClick={() => send(failedMessage)}
+                disabled={isLoading}
+                className="type-caption w-fit rounded-md border border-red-300 bg-white px-2 py-0.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
